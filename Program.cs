@@ -10,7 +10,10 @@ namespace baselining_tool
     {
         private static int Main(string[] args)
         {
-            return Parser.Default.ParseArguments<BaselineOptions>(args).MapResult((BaselineOptions options) => BaselineCommand(options), _ => 1);
+            return Parser.Default.ParseArguments<BaselineOptions>(args).
+                MapResult(
+                (BaselineOptions options) => BaselineCommand(options),
+                _ => 1);
         }
         private static int BaselineCommand(BaselineOptions options)
         {
@@ -18,22 +21,22 @@ namespace baselining_tool
             string ext = Path.GetExtension(mFilePath);
             if (ext != ".sarif")
             {
-                //baselineLogger("Expected a sarif file but got " + ext);
+                baselineLogger("Expected a sarif file but got " + ext + "\n");
                 //check exit codes for more details
                 Environment.Exit(1);
             }
 
             SarifLog sarifLog = SarifLog.Load(mFilePath);
   
-            //baselineLogger("Input recieved. checking format...");
+            baselineLogger("Input recieved. checking format...\n");
             bool validFormat = checkFormat(sarifLog);
             if (validFormat == false)
             {
                 //I might be able to run sarif multitool inside this executible instead of running it initially??
-                //baselineLogger("The saif file is not a proper baseline file"); 
+                baselineLogger("The saif file is not a proper baseline file \n"); 
                 Console.WriteLine("SarifLog is invalid.");
 
-                //Environment.Exit(1);
+                Environment.Exit(1);
             }
             analyseSarif(sarifLog);
 
@@ -57,7 +60,7 @@ namespace baselining_tool
 
         private static void baselineLogger(string v)
         {
-            string filePath = @"\logs";
+            string filePath = AppDomain.CurrentDomain.BaseDirectory;
             StringBuilder sb = new StringBuilder();
             sb.Append(v);
             File.AppendAllText(filePath + "log.txt", sb.ToString());

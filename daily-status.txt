@@ -1,0 +1,5 @@
+==> Thur, July 15, 16
+-implemented and tested command line options/arguments
+-spent a lot of hours studying c#
+-updated the baseline-tool design guide
+-leared useage of commandline parser tool

@@ -7,6 +7,7 @@ namespace baselining_tool{
         public RuleInfo(){
 
             
+            
         }
     }
 }

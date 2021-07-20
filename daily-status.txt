@@ -3,3 +3,9 @@
 -spent a lot of hours studying c#
 -updated the baseline-tool design guide
 -leared useage of commandline parser tool
+
+
+==>Mon, Jul 19
+-minor log fix
+-generate html UI
+-wrote output logic

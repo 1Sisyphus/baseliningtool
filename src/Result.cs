@@ -1,10 +1,15 @@
 ﻿using System;
-namespace baselining_tool.src
+namespace baselining_tool
 {
-    public class Result
-    {
-        public Result()
+    
+
+
+        public enum ResultStates
         {
-        }
-    }
+            RulePasses = 1,
+            SingleDefect = 2,
+            MultipleDefect = 3
+        };
+    
+    
 }

@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.Sarif;
 using System;
 using System.IO;
 using System.Text;
+using System.Collections.Generic;
 
 namespace baselining_tool
 {
@@ -11,12 +12,19 @@ namespace baselining_tool
         private static int log_status;
         private static FilterStates f;
 
+        private static List<Run> runList = new List<Run>();
+
         private static int Main(string[] args)
         {
             return Parser.Default.ParseArguments<BaselineOptions>(args).
                 MapResult(
                 (BaselineOptions options) => BaselineCommand(options),
                 _ => 1);
+        }
+
+        public static int LogStatus
+        {
+            get => log_status;
         }
         private static int BaselineCommand(BaselineOptions options)
         {
@@ -27,7 +35,7 @@ namespace baselining_tool
             f = FilterStates.All;
             if (ext != ".sarif")
             {
-                baselineLogger("Expected a sarif file but got " + ext + "\n");
+                BLogger.baselineLogger("Expected a sarif file but got " + ext + "\n");
                 Environment.Exit(1);
             }
 
@@ -51,7 +59,7 @@ namespace baselining_tool
                         f = FilterStates.All;
                         break;
                     default:
-                        baselineLogger("Filter is not chosen from 'new, unchanged, updated, absent, or all'" + "\n");
+                        BLogger.baselineLogger("Filter is not chosen from 'new, unchanged, updated, absent, or all'" + "\n");
                         Environment.Exit(1);
                         break;
                 }
@@ -61,12 +69,12 @@ namespace baselining_tool
             try
             {
                 sarifLog = SarifLog.Load(mFilePath);
-                baselineLogger("Input recieved. checking format...\n");
+                BLogger.baselineLogger("Input recieved. checking format...\n");
 
                 bool validFormat = checkFormat(sarifLog);
                 if (validFormat == false)
                 {
-                    baselineLogger("The saif file missing important properties. check for present of Runs, Results, or baselineState property \n");
+                    BLogger.baselineLogger("The saif file missing important properties. check for present of Runs, Results, or baselineState property \n");
                     Console.WriteLine("file is invalid.");
 
                     Environment.Exit(1);
@@ -75,7 +83,7 @@ namespace baselining_tool
             }
             catch (Exception e)
             {
-                baselineLogger("error occurred while loading file" + e.Message + "\n");
+                BLogger.baselineLogger("error occurred while loading file" + e.Message + "\n");
                 Environment.Exit(1);
             }
 
@@ -86,52 +94,29 @@ namespace baselining_tool
 
         private static bool checkFormat(SarifLog sarifLog)
         {
-            bool bsPresent = true;
-
             //only checking the first Run needed
             if (sarifLog == null ||
-                sarifLog.Runs == null
+                sarifLog.Runs == null ||
+                sarifLog.Runs.Count == 0
                 )
             {
                 return false;
 
             }
 
-            for (int i = 0; i < sarifLog.Runs.Count; i++)
-            {
-
-                bsPresent = bsPresent && (sarifLog.Runs[i].Results[0].BaselineState != BaselineState.None);
-            }
-
-
-            return bsPresent;
+            return true;
         }
 
-        private static void baselineLogger(string v)
-        {
 
-            string filePath = AppDomain.CurrentDomain.BaseDirectory;
-            if (log_status == 0 && File.Exists(filePath + "btlog.txt"))
-            {
-                File.Delete(filePath + "btlog.txt");
-                Console.WriteLine("Exisiting log deleted");
-            }
-            StringBuilder sb = new StringBuilder();
-            sb.Append(v);
-            File.AppendAllText(filePath + "btlog.txt", sb.ToString());
-            sb.Clear();
-        }
 
         private static void analyseSarif(SarifLog sarifLog)
         {
-            ResultStates prevStatus;
-            ResultStates currStatus;
 
-
-            int newCount = 0, absentCount = 0, unchangedCount = 0, updatedCount = 0;
 
             for (int i = 0; i < sarifLog.Runs.Count; i++)
             {
+                int newCount = 0, absentCount = 0, unchangedCount = 0, updatedCount = 0;
+
 
                 for (int j = 0; j < sarifLog.Runs[i].Results.Count; j++)
                 {
@@ -156,17 +141,74 @@ namespace baselining_tool
 
                     }
                 }
+
+                List<ResultStates> rs = getBStateForARun(
+                        newCount,
+                        absentCount,
+                        unchangedCount,
+                        updatedCount,
+                        sarifLog,
+                        i);
+                //check needed for null values when displaying results.
+
+                createARun(sarifLog, i, rs);
+
+
             }
 
-            //has to be inside for-loop
+            displayResult(runList);
 
-            if ((newCount == sarifLog.Runs[0].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
+        }
+
+        private static void createARun(SarifLog sarifLog, int i, List<ResultStates> rs)
+        {
+            //only Rule[0] needed as others in the array are duplicates.
+            RuleInfo ruleInfo = new RuleInfo(
+                sarifLog.Runs[i].Tool.Driver.Rules[0].Name,
+                sarifLog.Runs[i].Tool.Driver.Rules[0].Id,
+                sarifLog.Runs[i].Tool.Driver.Rules[0].GetProperty("problem.severity"),
+                sarifLog.Runs[i].Tool.Driver.Rules[0].ShortDescription.Text
+            );
+
+            //need a way to fix this.
+            DriverInfo driverInfo = new DriverInfo
+                (sarifLog.Runs[i].Artifacts[0].Location.Uri.GetFileName(),
+                sarifLog.Runs[i].Artifacts[0].Location.Uri.GetFilePath()
+            );
+
+            var oneQueryonOneDriver = new Run(
+                driverInfo,
+                ruleInfo,
+                rs[0],
+                rs[1]);
+            runList.Add(oneQueryonOneDriver);
+
+        }
+
+        private static List<ResultStates> getBStateForARun(
+            int newCount,
+            int absentCount,
+            int unchangedCount,
+            int updatedCount,
+            SarifLog sarifLog,
+            int runIndex
+
+        )
+        {
+
+            List<ResultStates> rs = new List<ResultStates>();
+
+            //other is a placeholder for future baselineState types
+            ResultStates prevStatus = ResultStates.Other;
+            ResultStates currStatus = ResultStates.Other;
+
+            if ((newCount == sarifLog.Runs[runIndex].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
             {
-                //case of Previous Rule Pass
+                //case of Previous Rule Pass For a given driver
                 prevStatus = ResultStates.RulePasses;
 
             }
-            else if ((absentCount == sarifLog.Runs[0].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
+            else if ((absentCount == sarifLog.Runs[runIndex].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
             {
                 //case of Current Rule Pass
                 currStatus = ResultStates.RulePasses;
@@ -198,43 +240,17 @@ namespace baselining_tool
 
             }
 
+            rs.Add(prevStatus);
+            rs.Add(currStatus);
 
-
-
+            return rs;
         }
 
-        //should work for now but check html generator APIs
-        private static void htmlGenerator(ResultStates rs)
+
+        private static void displayResult(List<Run> runList)
         {
-            //Table start.
-            string html = "<table cellpadding='5' cellspacing='0' style='border: 1px solid #ccc;font-size: 9pt;font-family:arial'>";
-
-            //Adding HeaderRow.
-            html += "<tr>";
-            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>col_1</th>";//test header
-            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>col_2</th>";//test header
-            html += "</tr>";
-
-            SarifLog log = SarifLog.Load(@"/Users/abeni/Projects/TestProj/testfile.sarif");//test spit
-            for (int i = 0; i < log.Runs[0].Results.Count; i++)
-            {
-                //Adding DataRow.
-                html += "<tr>";
-                html += "<td style='width:120px;border: 1px solid #ccc'>" + log.Runs[0].Results[i].RuleId + "</td>";
-
-                //Adding DataRow.
-
-                html += "<td style='width:120px;border: Ï1px solid #ccc'>" + log.Runs[0].Results[i].BaselineState.ToString() + "</td>";
-                html += "</tr>";
-            }
-
-            //Table end.
-            html += "</table>";
-
-            //Create the HTML file.
-            File.WriteAllText(@"E:\Files\Console.htm", html);
-
-            baselineLogger("Html File Created");
+            //stuff related to output display
+            HtmlGenerator.generateHTML(runList);
         }
     }
 }

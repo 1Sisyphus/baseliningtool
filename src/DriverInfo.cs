@@ -1,16 +1,37 @@
 using System;
 using Microsoft.CodeAnalysis.Sarif;
-namespace baselining_tool{
+namespace baselining_tool
+{
 
-    class DriverInfo{
+    class DriverInfo
+    {
         private string name;
         private string path;
-        /*
-         using the info from option.Input to get driver info??
-         */
-        public DriverInfo(){
 
-            
+        public DriverInfo(string name, string path)
+        {
+
+            this.name = name;
+            this.path = path;
+
+        }
+
+        public string Name
+        {
+            get => name;
+            set
+            {
+                this.name = value;
+            }
+        }
+
+        public string Path
+        {
+            get => path;
+            set
+            {
+                this.path = value;
+            }
         }
     }
 }

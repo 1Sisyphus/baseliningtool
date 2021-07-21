@@ -1,46 +1,15 @@
-try
-{
-    SarifLog sarif = SarifLog.Load(@"..\databases\NewBaseline.sarif");
-    Console.WriteLine("value is " + sarif.Runs[0].Results.Count);
-
-}
-catch (Exception e)
-{
-    Console.WriteLine(e.Message);
-}
-
 
 ////////////
 
  private static int DummyCommand(DummyOptions options)
 {
     Console.WriteLine($"{options.ParameterA} {options.ParameterB}");
-    Console.WriteLine("{0} {1}", options.ParameterA, options.ParameterB);
-            
+    Console.WriteLine("{0} {1}", options.ParameterA, options.ParameterB);       
 
     return 0;
 }
 
-
 ////////////
 
-
-dummyoptions
-
-
-[Verb("dummy", HelpText = "Analyze a database.")]
-internal class DummyOptions
-{
-    [Option(
-        "parameter-a", HelpText = "help")]
-    public string ParameterA { get; set; }
-
-    [Option(
-        "parameter-b", HelpText = "help")]
-    public string ParameterB { get; set; }
-}
-
-
-/////////
 
 

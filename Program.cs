@@ -3,13 +3,13 @@ using Microsoft.CodeAnalysis.Sarif;
 using System;
 using System.IO;
 using System.Text;
-using Microsoft.AspNetCore.Html;
 
 namespace baselining_tool
 {
     internal class Program
     {
         private static int log_status;
+        private static FilterStates f;
 
         private static int Main(string[] args)
         {
@@ -22,52 +22,99 @@ namespace baselining_tool
         {
             string mFilePath = options.InputFile;
             string ext = Path.GetExtension(mFilePath);
+            //initialize some var
             log_status = 0;
+            f = FilterStates.All;
             if (ext != ".sarif")
             {
                 baselineLogger("Expected a sarif file but got " + ext + "\n");
-                //check exit codes for more details
                 Environment.Exit(1);
             }
 
-            SarifLog sarifLog = SarifLog.Load(mFilePath);
-  
-            baselineLogger("Input recieved. checking format...\n");
-            bool validFormat = checkFormat(sarifLog);
-            if (validFormat == false)
+            if (options.Filter != null)
             {
-                baselineLogger("The saif file is not a proper baseline file \n"); 
-                Console.WriteLine("SarifLog is invalid.");
+                switch (options.Filter.ToString().ToLower())
+                {
+                    case "new":
+                        f = FilterStates.New;
+                        break;
+                    case "absent":
+                        f = FilterStates.Absent;
+                        break;
+                    case "updated":
+                        f = FilterStates.Updated;
+                        break;
+                    case "unchanged":
+                        f = FilterStates.Unchanged;
+                        break;
+                    case "all":
+                        f = FilterStates.All;
+                        break;
+                    default:
+                        baselineLogger("Filter is not chosen from 'new, unchanged, updated, absent, or all'" + "\n");
+                        Environment.Exit(1);
+                        break;
+                }
+            }
 
+            SarifLog sarifLog;
+            try
+            {
+                sarifLog = SarifLog.Load(mFilePath);
+                baselineLogger("Input recieved. checking format...\n");
+
+                bool validFormat = checkFormat(sarifLog);
+                if (validFormat == false)
+                {
+                    baselineLogger("The saif file missing important properties. check for present of Runs, Results, or baselineState property \n");
+                    Console.WriteLine("file is invalid.");
+
+                    Environment.Exit(1);
+                }
+                analyseSarif(sarifLog);
+            }
+            catch (Exception e)
+            {
+                baselineLogger("error occurred while loading file" + e.Message + "\n");
                 Environment.Exit(1);
             }
-            analyseSarif(sarifLog);
+
+
 
             return 0;
         }
 
         private static bool checkFormat(SarifLog sarifLog)
         {
-            //enough ckeck for now
+            bool bsPresent = true;
+
+            //only checking the first Run needed
             if (sarifLog == null ||
-                sarifLog.Runs == null ||
-                sarifLog.Runs[0].Results == null ||
-                sarifLog.Runs[0].Results.Count == 0)
+                sarifLog.Runs == null
+                )
             {
                 return false;
+
+            }
+
+            for (int i = 0; i < sarifLog.Runs.Count; i++)
+            {
+
+                bsPresent = bsPresent && (sarifLog.Runs[i].Results[0].BaselineState != BaselineState.None);
             }
 
 
-            return sarifLog.Runs[0].Results[0].BaselineState != BaselineState.None;
+            return bsPresent;
         }
 
         private static void baselineLogger(string v)
         {
-            
+
             string filePath = AppDomain.CurrentDomain.BaseDirectory;
-            if (log_status == 0 && File.Exists(filePath))
+            if (log_status == 0 && File.Exists(filePath + "btlog.txt"))
             {
-                File.Delete(filePath);
+                File.Delete(filePath + "btlog.txt");
+                Console.WriteLine("Exisiting log deleted");
             }
             StringBuilder sb = new StringBuilder();
             sb.Append(v);
@@ -83,27 +130,31 @@ namespace baselining_tool
 
             int newCount = 0, absentCount = 0, unchangedCount = 0, updatedCount = 0;
 
-            for (int i = 0; i < sarifLog.Runs[0].Results.Count; i++)
+            for (int i = 0; i < sarifLog.Runs.Count; i++)
             {
-                if (sarifLog.Runs[0].Results[i].BaselineState == BaselineState.New)
-                {
-                    newCount += 1;
 
-                }
-                else if (sarifLog.Runs[0].Results[i].BaselineState == BaselineState.Unchanged)
+                for (int j = 0; j < sarifLog.Runs[i].Results.Count; j++)
                 {
-                    unchangedCount += 1;
+                    if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.New)
+                    {
+                        newCount += 1;
 
-                }
-                else if (sarifLog.Runs[0].Results[i].BaselineState == BaselineState.Absent)
-                {
-                    absentCount += 1;
+                    }
+                    else if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.Unchanged)
+                    {
+                        unchangedCount += 1;
 
-                }
-                else if (sarifLog.Runs[0].Results[i].BaselineState == BaselineState.Updated)
-                {
-                    updatedCount += 1;
+                    }
+                    else if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.Absent)
+                    {
+                        absentCount += 1;
 
+                    }
+                    else if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.Updated)
+                    {
+                        updatedCount += 1;
+
+                    }
                 }
             }
 
@@ -112,8 +163,8 @@ namespace baselining_tool
             if ((newCount == sarifLog.Runs[0].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
             {
                 //case of Previous Rule Pass
-                 prevStatus = ResultStates.RulePasses;
-             
+                prevStatus = ResultStates.RulePasses;
+
             }
             else if ((absentCount == sarifLog.Runs[0].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
             {
@@ -147,13 +198,13 @@ namespace baselining_tool
 
             }
 
-             
-            
+
+
 
         }
 
         //should work for now but check html generator APIs
-        private static void htmlGenerator(ResultStates rs, )
+        private static void htmlGenerator(ResultStates rs)
         {
             //Table start.
             string html = "<table cellpadding='5' cellspacing='0' style='border: 1px solid #ccc;font-size: 9pt;font-family:arial'>";
@@ -187,4 +238,3 @@ namespace baselining_tool
         }
     }
 }
-

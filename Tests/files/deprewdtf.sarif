@@ -1,0 +1,43 @@
+{
+  "$schema" : "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version" : "2.1.0",
+  "runs" : [ {
+    "tool" : {
+      "driver" : {
+        "name" : "CodeQL",
+        "organization" : "GitHub",
+        "semanticVersion" : "2.3.4",
+        "rules" : [ {
+          "id" : "cpp/windows/wdk/deprecated-api",
+          "name" : "cpp/windows/wdk/deprecated-api",
+          "shortDescription" : {
+            "text" : "Use of deprecated WDK API"
+          },
+          "fullDescription" : {
+            "text" : "Use of deprecated WDK API detected."
+          },
+          "defaultConfiguration" : { },
+          "properties" : {
+            "feature.area" : "Multiple",
+            "owner.email" : "raulga@microsoft.com",
+            "security.severity" : "Low",
+            "query-version" : "1.1",
+            "kind" : "problem",
+            "impact" : "Attack Surface Reduction",
+            "repro.text" : "The following code locations contain calls to a deprecated WDK API",
+            "name" : "Use of deprecated WDK API",
+            "description" : "Use of deprecated WDK API detected.",
+            "id" : "cpp/windows/wdk/deprecated-api",
+            "platform" : "Desktop",
+            "problem.severity" : "warning"
+          }
+        } ]
+      }
+    },
+    "results" : [ ],
+    "columnKind" : "utf16CodeUnits",
+    "properties" : {
+      "semmle.formatSpecifier" : "sarifv2.1.0"
+    }
+  } ]
+}

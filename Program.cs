@@ -14,7 +14,7 @@ namespace baselining_tool
 
         private static List<Run> runList = new List<Run>();
 
-        private static int Main(string[] args)
+        static int Main(string[] args)
         {
             return Parser.Default.ParseArguments<BaselineOptions>(args).
                 MapResult(
@@ -30,12 +30,15 @@ namespace baselining_tool
         {
             string mFilePath = options.InputFile;
             string ext = Path.GetExtension(mFilePath);
+
             //initialize some var
             log_status = 0;
             f = FilterStates.All;
+
             if (ext != ".sarif")
             {
                 BLogger.baselineLogger("Expected a sarif file but got " + ext + "\n");
+                Console.WriteLine("Didn't get a expected \n");
                 Environment.Exit(1);
             }
 
@@ -60,6 +63,7 @@ namespace baselining_tool
                         break;
                     default:
                         BLogger.baselineLogger("Filter is not chosen from 'new, unchanged, updated, absent, or all'" + "\n");
+                        Console.WriteLine("Choose from available filter options \n");
                         Environment.Exit(1);
                         break;
                 }
@@ -69,21 +73,25 @@ namespace baselining_tool
             try
             {
                 sarifLog = SarifLog.Load(mFilePath);
-                BLogger.baselineLogger("Input recieved. checking format...\n");
+                BLogger.baselineLogger("Input recieved. Checking format...\n");
 
                 bool validFormat = checkFormat(sarifLog);
                 if (validFormat == false)
                 {
-                    BLogger.baselineLogger("The saif file missing important properties. check for present of Runs, Results, or baselineState property \n");
+                    BLogger.baselineLogger("The saif file missing important properties. Check for presence of a Run, Results, or baselineState property \n");
                     Console.WriteLine("file is invalid.");
 
                     Environment.Exit(1);
                 }
-                analyseSarif(sarifLog);
+                BLogger.baselineLogger("File getting analysed is: " + mFilePath + "\n");
+
+                //analyseSarif(sarifLog);
+                HtmlGenerator.generateHTML(sarifLog);
             }
             catch (Exception e)
             {
-                BLogger.baselineLogger("error occurred while loading file" + e.Message + "\n");
+                Console.WriteLine("Error occured while loading file " + mFilePath + "\n");
+                Console.WriteLine(e.Message + "\n");
                 Environment.Exit(1);
             }
 
@@ -92,9 +100,12 @@ namespace baselining_tool
             return 0;
         }
 
+        
+
         private static bool checkFormat(SarifLog sarifLog)
         {
-            //only checking the first Run needed
+            bool bstate = true;
+            //first level check
             if (sarifLog == null ||
                 sarifLog.Runs == null ||
                 sarifLog.Runs.Count == 0
@@ -103,8 +114,19 @@ namespace baselining_tool
                 return false;
 
             }
-
-            return true;
+            //however, if at least one Result is available for a Run, the result and all
+            //other remaining results in the Run should have a baselineState property.
+            for (int k = 0; k < sarifLog.Runs.Count; k++)
+            {
+                if (sarifLog.Runs[k].Results.Count != 0)
+                {
+                    for (int i = 0; i < sarifLog.Runs[k].Results.Count; i++)
+                    {
+                        bstate = bstate && (sarifLog.Runs[k].Results[i].BaselineState != BaselineState.None);
+                    }
+                }
+            }
+            return bstate;
         }
 
 

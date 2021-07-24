@@ -3,7 +3,7 @@ using System;
 namespace baselining_tool
 {
 
-    class Run
+    class DRRun
     {
 
         private DriverInfo _driverInfo;
@@ -11,7 +11,7 @@ namespace baselining_tool
 
         private ResultStates _prevState;
         private ResultStates _currState;
-        public Run(DriverInfo driverInfo, RuleInfo ruleInfo, ResultStates prevState, ResultStates currState)
+        public DRRun(DriverInfo driverInfo, RuleInfo ruleInfo, ResultStates prevState = ResultStates.Undetermined, ResultStates currState = ResultStates.Undetermined)
         {
             this._driverInfo = driverInfo;
             this._ruleInfo = ruleInfo;
@@ -22,10 +22,6 @@ namespace baselining_tool
         public DriverInfo DriverInformation
         {
             get => _driverInfo;
-            set
-            {
-                _driverInfo = value;
-            }
         }
         public RuleInfo RuleInformation
         {
@@ -35,11 +31,17 @@ namespace baselining_tool
         public ResultStates PreviousState
         {
             get => _prevState;
+            set{
+                _prevState = value;
+            }
         }
 
         public ResultStates CurrentState
         {
             get => _currState;
+            set{
+                _currState = value;
+            }
         }
 
 

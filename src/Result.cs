@@ -6,7 +6,7 @@ namespace baselining_tool
         RulePasses = 1,
         SingleDefect = 2,
         MultipleDefect = 3,
-        Other = 4
+        Undetermined = 4
     };
 
 

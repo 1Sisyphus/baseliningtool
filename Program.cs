@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace baselining_tool
 {
@@ -12,7 +13,7 @@ namespace baselining_tool
         private static int log_status;
         private static FilterStates f;
 
-        private static List<Run> runList = new List<Run>();
+        private static Dictionary<DRRun, List<ResultInfo>> mDict = new Dictionary<DRRun, List<ResultInfo>>();
 
         static int Main(string[] args)
         {
@@ -85,8 +86,8 @@ namespace baselining_tool
                 }
                 BLogger.baselineLogger("File getting analysed is: " + mFilePath + "\n");
 
-                //analyseSarif(sarifLog);
-                HtmlGenerator.generateHTML(sarifLog);
+                analyseSarif(sarifLog);
+                //HtmlGenerator.generateHTML(sarifLog);
             }
             catch (Exception e)
             {
@@ -100,7 +101,7 @@ namespace baselining_tool
             return 0;
         }
 
-        
+
 
         private static bool checkFormat(SarifLog sarifLog)
         {
@@ -137,100 +138,147 @@ namespace baselining_tool
 
             for (int i = 0; i < sarifLog.Runs.Count; i++)
             {
-                int newCount = 0, absentCount = 0, unchangedCount = 0, updatedCount = 0;
+                //int newCount = 0, absentCount = 0, unchangedCount = 0, updatedCount = 0;
 
 
                 for (int j = 0; j < sarifLog.Runs[i].Results.Count; j++)
                 {
-                    if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.New)
+
+                    //initializations
+
+                    ArtifactLocation artifactLocation = sarifLog.Runs[i].Results[j].Locations[0].PhysicalLocation.ArtifactLocation;
+                    int ln = sarifLog.Runs[i].Results[j].Locations[0].PhysicalLocation.Region.StartLine;
+                    string rId = sarifLog.Runs[i].Results[j].RuleId;
+                    string rmessage = sarifLog.Runs[i].Results[j].Message.Text;
+                    BaselineState bs = sarifLog.Runs[i].Results[j].BaselineState;
+                    string dname = artifactLocation.Uri.ToString().Split('/')[0];
+                    string rname = rId.Split('/')[rId.Split('/').Length - 1];
+
+
+                    ResultInfo rInfo = new ResultInfo(
+                        artifactLocation.Uri.ToString(),
+                        ln,
+                        rId,
+                        bs);
+
+                    DRRun available = CheckDict(mDict, dname, rname);
+
+                    if (available == null)
+                    {
+                        //DRRun obj not in dic
+
+                        DRRun dRRun = new DRRun(
+                            new DriverInfo(dname, artifactLocation.UriBaseId + dname),
+                            new RuleInfo(rname, rId, rmessage)
+                        );
+                        BLogger.baselineLogger("new driver-rule pair added " + dRRun.GetHashCode() + "\n");
+                        List<ResultInfo> ruleInfoList = new List<ResultInfo>();
+                        ruleInfoList.Add(rInfo);
+                        mDict.Add(dRRun, ruleInfoList);
+
+                    }
+                    else
+                    {
+                        BLogger.baselineLogger("driver-rule pair is in dictionary. Updating value ... " + available.GetHashCode() + "\n");
+                        List<ResultInfo> newValue = mDict[available];
+                        newValue.Add(rInfo);
+                        mDict[available] = newValue;
+
+                    }
+
+                }
+            }
+
+            prepBundleStates(mDict);
+            displayResult(mDict);
+
+        }
+
+        private static void displayResult(Dictionary<DRRun, List<ResultInfo>> mDict)
+        {
+            //do other stuff related to result output
+            HtmlGenerator.generateHTML(mDict);
+        }
+
+        private static void prepBundleStates(Dictionary<DRRun, List<ResultInfo>> mDict)
+        {
+
+            foreach (DRRun run in mDict.Keys)
+            {
+                int newCount = 0, unchangedCount = 0, updatedCount = 0, absentCount = 0;
+                List<ResultInfo> rInfos = mDict[run];
+                foreach (ResultInfo ri in rInfos)
+                {
+
+                    if (ri.BState == BaselineState.New)
                     {
                         newCount += 1;
 
                     }
-                    else if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.Unchanged)
+                    else if (ri.BState == BaselineState.Unchanged)
                     {
                         unchangedCount += 1;
 
                     }
-                    else if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.Absent)
+                    else if (ri.BState == BaselineState.Absent)
                     {
                         absentCount += 1;
 
                     }
-                    else if (sarifLog.Runs[i].Results[j].BaselineState == BaselineState.Updated)
+                    else if (ri.BState == BaselineState.Updated)
                     {
                         updatedCount += 1;
 
                     }
                 }
 
-                List<ResultStates> rs = getBStateForARun(
-                        newCount,
-                        absentCount,
-                        unchangedCount,
-                        updatedCount,
-                        sarifLog,
-                        i);
-                //check needed for null values when displaying results.
+                List<ResultStates> rs = bundleStates(newCount, absentCount, unchangedCount, updatedCount, rInfos.Count);
 
-                createARun(sarifLog, i, rs);
-
+                run.PreviousState = rs[0];
+                run.CurrentState = rs[1];
 
             }
 
-            displayResult(runList);
-
         }
 
-        private static void createARun(SarifLog sarifLog, int i, List<ResultStates> rs)
+
+
+        private static DRRun CheckDict(Dictionary<DRRun, List<ResultInfo>> mDict, string dname, string rname)
         {
-            //only Rule[0] needed as others in the array are duplicates.
-            RuleInfo ruleInfo = new RuleInfo(
-                sarifLog.Runs[i].Tool.Driver.Rules[0].Name,
-                sarifLog.Runs[i].Tool.Driver.Rules[0].Id,
-                sarifLog.Runs[i].Tool.Driver.Rules[0].GetProperty("problem.severity"),
-                sarifLog.Runs[i].Tool.Driver.Rules[0].ShortDescription.Text
-            );
-
-            //need a way to fix this.
-            DriverInfo driverInfo = new DriverInfo
-                (sarifLog.Runs[i].Artifacts[0].Location.Uri.GetFileName(),
-                sarifLog.Runs[i].Artifacts[0].Location.Uri.GetFilePath()
-            );
-
-            var oneQueryonOneDriver = new Run(
-                driverInfo,
-                ruleInfo,
-                rs[0],
-                rs[1]);
-            runList.Add(oneQueryonOneDriver);
-
+            DRRun rval = null;
+            foreach (DRRun run in mDict.Keys)
+            {
+                if (run.DriverInformation.Name == dname && run.RuleInformation.Name == rname)
+                {
+                    rval = run;
+                    break;
+                }
+            }
+            return rval;
         }
 
-        private static List<ResultStates> getBStateForARun(
+
+        private static List<ResultStates> bundleStates(
             int newCount,
             int absentCount,
             int unchangedCount,
             int updatedCount,
-            SarifLog sarifLog,
-            int runIndex
-
+            int count
         )
         {
 
             List<ResultStates> rs = new List<ResultStates>();
 
-            //other is a placeholder for future baselineState types
-            ResultStates prevStatus = ResultStates.Other;
-            ResultStates currStatus = ResultStates.Other;
+            ResultStates prevStatus = ResultStates.Undetermined;
+            ResultStates currStatus = ResultStates.Undetermined;
 
-            if ((newCount == sarifLog.Runs[runIndex].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
+            if ((newCount == count) && (updatedCount == 0) && (unchangedCount == 0))
             {
                 //case of Previous Rule Pass For a given driver
                 prevStatus = ResultStates.RulePasses;
 
             }
-            else if ((absentCount == sarifLog.Runs[runIndex].Results.Count) && (updatedCount == 0) && (unchangedCount == 0))
+            else if ((absentCount == count) && (updatedCount == 0) && (unchangedCount == 0))
             {
                 //case of Current Rule Pass
                 currStatus = ResultStates.RulePasses;
@@ -268,11 +316,5 @@ namespace baselining_tool
             return rs;
         }
 
-
-        private static void displayResult(List<Run> runList)
-        {
-            //stuff related to output display
-            HtmlGenerator.generateHTML(runList);
-        }
     }
 }

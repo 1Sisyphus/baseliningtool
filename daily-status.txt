@@ -9,3 +9,8 @@
 -minor log fix
 -generate html UI
 -wrote output logic
+
+
+=>Tues, Wed, Thur, Fri July 20 to July 23
+-fixed a lot of things
+-run test

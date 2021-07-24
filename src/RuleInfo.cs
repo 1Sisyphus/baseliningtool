@@ -6,38 +6,32 @@ namespace baselining_tool
     class RuleInfo
     {
 
-        private string name;
-        private string id;
-        private string severity;
-        private string description;
+        private string _name;
+        private string _id;
+        private string _message;
 
-        public RuleInfo(string name, string id, string severity, string description)
+        public RuleInfo(string name, string id, string message)
         {
-            this.name = name;
-            this.id = id;
-            this.severity = severity;
-            this.description = description;
+            this._name = name;
+            this._id = id;
+            this._message = message;
 
         }
 
         public string Id
         {
-            get => id;
+            get => _id;
         }
 
         public string Name
         {
-            get => name;
+            get => _name;
         }
 
-        public string Severity
-        {
-            get => severity;
-        }
 
-        public string Description
+        public string Message
         {
-            get => description;
+            get => _message;
         }
 
 

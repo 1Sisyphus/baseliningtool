@@ -5,32 +5,32 @@ namespace baselining_tool
 
     class DriverInfo
     {
-        private string name;
-        private string path;
+        private string _name;
+        private string _path;
 
         public DriverInfo(string name, string path)
         {
 
-            this.name = name;
-            this.path = path;
+            this._name = name;
+            this._path = path;
 
         }
 
         public string Name
         {
-            get => name;
+            get => _name;
             set
             {
-                this.name = value;
+                this._name = value;
             }
         }
 
         public string Path
         {
-            get => path;
+            get => _path;
             set
             {
-                this.path = value;
+                this._path = value;
             }
         }
     }

@@ -67,7 +67,7 @@ namespace baselining_tool
             </style>
             ";
             html += "</head> <body>";
-            html += "<p><h3>Changes Report</h3></p> <div id=\"wrapper\">";
+            html += "<div id=\"wrapper\">";
 
 
             //Table output.
@@ -80,10 +80,11 @@ namespace baselining_tool
             html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Current Baseline State</th>";
             html += "</tr>";
 
+            int ctr = 0;
             foreach (DRRun run in mDict.Keys)
             {
                 //Adding row data for a Run
-                html += "<tr onclick=\"show_hide_row('hidden_row1');\">";
+                html += "<tr onclick=\"show_hide_row('hidden_row"+ctr+"');\">";
                 html += "<td style='border: 1px solid #ccc'>" + run.DriverInformation.Name + "</td>";
                 html += "<td style='border: Ï1px solid #ccc'>" + run.RuleInformation.Name + "</td>";
                 html += "<td style='border: Ï1px solid #ccc'>" + stringify(run.PreviousState) + "</td>";
@@ -92,14 +93,14 @@ namespace baselining_tool
 
                 //header info for a Result
 
-                html += "<tr id=\"hidden_row1\" class=\"hidden_row\"> " +
+                html += "<tr id=\"hidden_row"+ctr+"\" class=\"hidden_row\"> " +
                             " <td colspan=4> " +
                                 " <table border=1 id=\"table_detail\" align=left cellpadding=10>";
                 html += "<tr>";
                 html += "<th> File Name</th>";
                 html += "<th> Line Number</th>";
-                html += "<th> Rule Name</th>";
-                html += "<th> Status</th>";
+                html += "<th> Status </th>";
+                html += "<th> Rule Id </th>";
                 html += "</tr>";
 
                 //load each Result
@@ -117,7 +118,7 @@ namespace baselining_tool
 
                 html += "</table> </td> </tr>";
 
-
+                ctr += 1;
             }
             html += "</table> </div> </body> </html>";
             string filePath = AppDomain.CurrentDomain.BaseDirectory;

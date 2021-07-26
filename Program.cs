@@ -11,7 +11,7 @@ namespace baselining_tool
     internal class Program
     {
         private static int log_status;
-        private static FilterStates f;
+        private static ResultStates rs;
 
         private static Dictionary<DRRun, List<ResultInfo>> mDict = new Dictionary<DRRun, List<ResultInfo>>();
 
@@ -33,8 +33,8 @@ namespace baselining_tool
             string ext = Path.GetExtension(mFilePath);
 
             //initialize some var
-            log_status = 0;
-            f = FilterStates.All;
+            log_status = 1;
+            rs = ResultStates.Undetermined;
 
             if (ext != ".sarif")
             {
@@ -47,25 +47,18 @@ namespace baselining_tool
             {
                 switch (options.Filter.ToString().ToLower())
                 {
-                    case "new":
-                        f = FilterStates.New;
+                    case "single defect":
+                        rs = ResultStates.SingleDefect;
                         break;
-                    case "absent":
-                        f = FilterStates.Absent;
+                    case "multiple defect":
+                        rs = ResultStates.MultipleDefect;
                         break;
-                    case "updated":
-                        f = FilterStates.Updated;
-                        break;
-                    case "unchanged":
-                        f = FilterStates.Unchanged;
-                        break;
-                    case "all":
-                        f = FilterStates.All;
+                    case "rule passes":
+                        rs = ResultStates.RulePasses;
                         break;
                     default:
-                        BLogger.baselineLogger("Filter is not chosen from 'new, unchanged, updated, absent, or all'" + "\n");
-                        Console.WriteLine("Choose from available filter options \n");
-                        Environment.Exit(1);
+                        BLogger.baselineLogger("Filter is not chosen from 'single defect, multiple defect, rule passes'" + "\n");
+                        Console.WriteLine("Choosing the default option: All resutls \n");
                         break;
                 }
             }

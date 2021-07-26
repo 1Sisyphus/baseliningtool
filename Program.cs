@@ -172,9 +172,9 @@ namespace baselining_tool
                             new RuleInfo(rname, rId, rmessage)
                         );
                         BLogger.baselineLogger("new driver-rule pair added " + dRRun.GetHashCode() + "\n");
-                        List<ResultInfo> ruleInfoList = new List<ResultInfo>();
-                        ruleInfoList.Add(rInfo);
-                        mDict.Add(dRRun, ruleInfoList);
+                        List<ResultInfo> rInfoList = new List<ResultInfo>();
+                        rInfoList.Add(rInfo);
+                        mDict.Add(dRRun, rInfoList);
 
                     }
                     else

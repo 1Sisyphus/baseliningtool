@@ -122,14 +122,13 @@ namespace baselining_tool
         }
 
 
-
-        private static void analyseSarif(SarifLog sarifLog)
+        public static void analyseSarif(SarifLog sarifLog)
         {
 
 
             for (int i = 0; i < sarifLog.Runs.Count; i++)
             {
-                //int newCount = 0, absentCount = 0, unchangedCount = 0, updatedCount = 0;
+               
 
 
                 for (int j = 0; j < sarifLog.Runs[i].Results.Count; j++)
@@ -268,33 +267,34 @@ namespace baselining_tool
                 //case of Previous Rule Pass For a given driver
                 prevStatus = ResultStates.RulePasses;
 
+
             }
-            else if ((absentCount == count) && (updatedCount == 0) && (unchangedCount == 0))
+            if ((absentCount == count) && (updatedCount == 0) && (unchangedCount == 0))
             {
                 //case of Current Rule Pass
                 currStatus = ResultStates.RulePasses;
 
             }
-            else if (updatedCount + unchangedCount + absentCount == 1)
+             if (updatedCount + unchangedCount + absentCount == 1)
             {
                 //case of Previous Single Defect
                 prevStatus = ResultStates.SingleDefect;
 
 
             }
-            else if (updatedCount + unchangedCount + newCount == 1)
+             if (updatedCount + unchangedCount + newCount == 1)
             {
                 //case of Currnet Single Defect
                 currStatus = ResultStates.SingleDefect;
 
             }
-            else if (updatedCount + unchangedCount + absentCount >= 2)
+             if (updatedCount + unchangedCount + absentCount >= 2)
             {
                 //case of Multiple Previous Defect
                 prevStatus = ResultStates.MultipleDefect;
 
             }
-            else if (updatedCount + unchangedCount + newCount >= 2)
+            if (updatedCount + unchangedCount + newCount >= 2) 
             {
                 //case of Multiple Current Defect
                 currStatus = ResultStates.MultipleDefect;
@@ -304,7 +304,7 @@ namespace baselining_tool
             rs.Add(prevStatus);
             rs.Add(currStatus);
 
-            return rs;
+            return  rs;
         }
 
     }

@@ -8,7 +8,7 @@ using System.Collections;
 
 namespace baselining_tool
 {
-    internal class Program
+    public class Program
     {
         private static int log_status;
         private static ResultStates rs;
@@ -22,16 +22,17 @@ namespace baselining_tool
                 (BaselineOptions options) => BaselineCommand(options),
                 _ => 1);
         }
-
+         
         public static int LogStatus
         {
             get => log_status;
         }
-        private static int BaselineCommand(BaselineOptions options)
+        private  static int BaselineCommand(BaselineOptions options)
         {
             string mFilePath = options.InputFile;
             string ext = Path.GetExtension(mFilePath);
 
+            BLogger.baselineLogger("Create a log file\n");
             //initialize some var
             log_status = 1;
             rs = ResultStates.Undetermined;
@@ -39,7 +40,8 @@ namespace baselining_tool
             if (ext != ".sarif")
             {
                 BLogger.baselineLogger("Expected a sarif file but got " + ext + "\n");
-                Console.WriteLine("Didn't get a expected \n");
+                Console.WriteLine("Didn't get a expected file format\n");
+       
                 Environment.Exit(1);
             }
 
@@ -57,8 +59,7 @@ namespace baselining_tool
                         rs = ResultStates.RulePasses;
                         break;
                     default:
-                        BLogger.baselineLogger("Filter is not chosen from 'single defect, multiple defect, rule passes'" + "\n");
-                        Console.WriteLine("Choosing the default option: All resutls \n");
+                        Console.WriteLine("Filter is not chosen from 'single defect, multiple defect, rule passes.' Choosing the default option: All resutls \n");
                         break;
                 }
             }
@@ -67,20 +68,19 @@ namespace baselining_tool
             try
             {
                 sarifLog = SarifLog.Load(mFilePath);
-                BLogger.baselineLogger("Input recieved. Checking format...\n");
+                Console.WriteLine("Input recieved. Checking format...\n");
+                BLogger.baselineLogger($"Input file {mFilePath} recieved\n");
 
                 bool validFormat = checkFormat(sarifLog);
                 if (validFormat == false)
                 {
-                    BLogger.baselineLogger("The saif file missing important properties. Check for presence of a Run, Results, or baselineState property \n");
-                    Console.WriteLine("file is invalid.");
-
+                    BLogger.baselineLogger("The saif file missing important properties.  \n");
+                    Console.WriteLine("File is invalid. Check for presence of a Run, Results, or baselineState property\n");
                     Environment.Exit(1);
                 }
-                BLogger.baselineLogger("File getting analysed is: " + mFilePath + "\n");
 
+                Console.WriteLine("analysing file ...\n");
                 analyseSarif(sarifLog);
-                //HtmlGenerator.generateHTML(sarifLog);
             }
             catch (Exception e)
             {
@@ -89,14 +89,12 @@ namespace baselining_tool
                 Environment.Exit(1);
             }
 
-
-
             return 0;
         }
 
 
 
-        private static bool checkFormat(SarifLog sarifLog)
+        public static bool checkFormat(SarifLog sarifLog)
         {
             bool bstate = true;
             //first level check
@@ -108,7 +106,7 @@ namespace baselining_tool
                 return false;
 
             }
-            //however, if at least one Result is available for a Run, the result and all
+            //if at least one Result is available for a Run, the result and all
             //other remaining results in the Run should have a baselineState property.
             for (int k = 0; k < sarifLog.Runs.Count; k++)
             {

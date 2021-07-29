@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Collections;
+using System.Diagnostics;
 
 namespace baselining_tool
 {
@@ -30,20 +31,22 @@ namespace baselining_tool
         private static int BaselineCommand(BaselineOptions options)
         {
             string mFilePath = options.InputFile;
-            string ext = Path.GetExtension(mFilePath);
+            string qpath = options.QueryFile;
+            prepEnv(mFilePath, qpath);
+            //string ext = Path.GetExtension(mFilePath);
 
             BLogger.baselineLogger("Create a log file\n");
             //initialize some var
             log_status = 1;
             rs = ResultStates.Undetermined;
 
-            if (ext != ".sarif")
-            {
-                BLogger.baselineLogger("Expected a sarif file but got " + ext + "\n");
-                Console.WriteLine("Didn't get a expected file format\n");
+            //if (ext != ".sarif")
+            //{
+            //    BLogger.baselineLogger("Expected a sarif file but got " + ext + "\n");
+            //    Console.WriteLine("Didn't get a expected file format\n");
 
-                Environment.Exit(1);
-            }
+            //    Environment.Exit(1);
+            //}
 
             if (options.Filter != null)
             {
@@ -67,7 +70,7 @@ namespace baselining_tool
             SarifLog sarifLog;
             try
             {
-                sarifLog = SarifLog.Load(mFilePath);
+                sarifLog = SarifLog.Load(@"C:\Users\t-atamene\AppData\Roaming\WDSBaselining\baselining-files\tdbb.sarif");
                 Console.WriteLine("Input recieved. Checking format...\n");
                 BLogger.baselineLogger($"Input file {mFilePath} recieved\n");
 
@@ -177,6 +180,64 @@ namespace baselining_tool
             prepBundleStates(mDict);
             displayResult(mDict);
 
+        }
+
+        public static void prepEnv(string sp, string qp)
+        {
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
+            Directory.CreateDirectory(path);
+            string baseSubDirectory = Path.Combine(path, "baselining-files");
+            Directory.CreateDirectory(baseSubDirectory);
+            string analysisSubDirectory = Path.Combine(path, "analysis-files");
+            Directory.CreateDirectory(analysisSubDirectory);
+            string databseSubDirectory = Path.Combine(path, "databases");
+            Directory.CreateDirectory(databseSubDirectory);
+
+            //string fileName = Path.Combine(path, "btlog.txt");
+            //if (File.Exists(fileName))
+            //    File.Delete(fileName);
+            //StringBuilder sb = new StringBuilder();
+            //sb.Append("test 1 2 3\n");
+            //File.AppendAllText(fileName, sb.ToString());
+            //sb.Clear();
+            //sb.Append("test 4 5 6\n");
+            //File.AppendAllText(fileName, sb.ToString());
+            //sb.Clear();
+
+            Process p = new Process();
+            p.StartInfo.FileName = "cmd.exe";
+            p.StartInfo.CreateNoWindow = true;
+            p.StartInfo.RedirectStandardInput = true;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.UseShellExecute = false;
+            p.Start();
+
+            //string sourcePath = @"C:\Users\t-atamene\source\repos\pub\play";
+            //string queryPath = @"C:\codeql-home\Windows-Driver-Developer-Supplemental-Tools\codeql\windows-drivers\suites\windows_driver_mustfix.qls";
+
+            string sourcePath =sp;
+            string queryPath = qp;
+
+            p.StandardInput.WriteLine("codeql database create " +
+            "-l=cpp " +
+            "-s=" + sourcePath + " " +
+            "-c " + sourcePath + "/build-dir.cmd " +
+            databseSubDirectory + @"/tdb");
+
+
+            p.StandardInput.WriteLine("codeql database analyze " +
+                databseSubDirectory + "/tdb " +
+                "--format=sarifv2.1.0 " +
+                "--output=" + analysisSubDirectory + "/tdba.sarif " +
+                queryPath);
+
+            p.StandardInput.WriteLine("sarif match-results-forward " + analysisSubDirectory + "/tdba.sarif " + "--previous " + analysisSubDirectory + "/tdba.sarif " +
+                "--output-file-path " + baseSubDirectory + "/tdbb.sarif");
+
+            p.StandardInput.Flush();
+            p.StandardInput.Close();
+            p.WaitForExit();
+            Console.WriteLine(p.StandardOutput.ReadToEnd());
         }
 
         public static Dictionary<DRRun, List<ResultInfo>> dictData()

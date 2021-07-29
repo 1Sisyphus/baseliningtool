@@ -14,6 +14,12 @@ namespace baselining_tool
             get; set;
         }
 
+        [Option('q', "query", HelpText = "")]
+        public string QueryFile
+        {
+            get; set;
+        }
+
         [Option('f', "filter", HelpText = "choose output option from 'single defect', 'multiple defect', 'rule passes'. ")]
         public string Filter { get; set; }
     }

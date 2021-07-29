@@ -3,7 +3,7 @@ using System;
 namespace baselining_tool
 {
 
-    class RuleInfo
+    public class RuleInfo
     {
 
         private string _name;

@@ -3,7 +3,7 @@ using System;
 namespace baselining_tool
 {
 
-    class DRRun
+    public class DRRun
     {
 
         private DriverInfo _driverInfo;

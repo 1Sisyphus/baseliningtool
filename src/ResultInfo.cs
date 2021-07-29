@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.Sarif;
 
 namespace baselining_tool{
     
-    internal class ResultInfo{
+    public class ResultInfo{
         private string _fileLocation;
         private int _lineNum;
         private string _ruleId;

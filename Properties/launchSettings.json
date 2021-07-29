@@ -1,8 +1,7 @@
 {
   "profiles": {
     "baselining-tool": {
-      "commandName": "Project",
-      "commandLineArgs": "C:\\Users\\t-atamene\\source\\repos\\baselining-tool\\Tests\\testfile1.sarif"
+      "commandName": "Project"
     }
   }
 }

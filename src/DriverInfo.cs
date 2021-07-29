@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.Sarif;
 namespace baselining_tool
 {
 
-    class DriverInfo
+    public class DriverInfo
     {
         private string _name;
         private string _path;

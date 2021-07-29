@@ -22,12 +22,12 @@ namespace baselining_tool
                 (BaselineOptions options) => BaselineCommand(options),
                 _ => 1);
         }
-         
+
         public static int LogStatus
         {
             get => log_status;
         }
-        private  static int BaselineCommand(BaselineOptions options)
+        private static int BaselineCommand(BaselineOptions options)
         {
             string mFilePath = options.InputFile;
             string ext = Path.GetExtension(mFilePath);
@@ -41,7 +41,7 @@ namespace baselining_tool
             {
                 BLogger.baselineLogger("Expected a sarif file but got " + ext + "\n");
                 Console.WriteLine("Didn't get a expected file format\n");
-       
+
                 Environment.Exit(1);
             }
 
@@ -124,13 +124,8 @@ namespace baselining_tool
 
         public static void analyseSarif(SarifLog sarifLog)
         {
-
-
             for (int i = 0; i < sarifLog.Runs.Count; i++)
             {
-               
-
-
                 for (int j = 0; j < sarifLog.Runs[i].Results.Count; j++)
                 {
 
@@ -184,13 +179,18 @@ namespace baselining_tool
 
         }
 
+        public static Dictionary<DRRun, List<ResultInfo>> dictData()
+        {
+            return mDict;
+        }
+
         private static void displayResult(Dictionary<DRRun, List<ResultInfo>> mDict)
         {
             //do other stuff related to result output
             HtmlGenerator.generateHTML(mDict);
         }
 
-        private static void prepBundleStates(Dictionary<DRRun, List<ResultInfo>> mDict)
+        public static void prepBundleStates(Dictionary<DRRun, List<ResultInfo>> mDict)
         {
 
             foreach (DRRun run in mDict.Keys)
@@ -269,32 +269,35 @@ namespace baselining_tool
 
 
             }
-            if ((absentCount == count) && (updatedCount == 0) && (unchangedCount == 0))
-            {
-                //case of Current Rule Pass
-                currStatus = ResultStates.RulePasses;
 
-            }
-             if (updatedCount + unchangedCount + absentCount == 1)
+            else if (updatedCount + unchangedCount + absentCount == 1)
             {
                 //case of Previous Single Defect
                 prevStatus = ResultStates.SingleDefect;
 
 
             }
-             if (updatedCount + unchangedCount + newCount == 1)
-            {
-                //case of Currnet Single Defect
-                currStatus = ResultStates.SingleDefect;
 
-            }
-             if (updatedCount + unchangedCount + absentCount >= 2)
+            else if (updatedCount + unchangedCount + absentCount >= 2)
             {
                 //case of Multiple Previous Defect
                 prevStatus = ResultStates.MultipleDefect;
 
             }
-            if (updatedCount + unchangedCount + newCount >= 2) 
+            if ((absentCount == count) && (updatedCount == 0) && (unchangedCount == 0))
+            {
+                //case of Current Rule Pass
+                currStatus = ResultStates.RulePasses;
+
+            }
+            else if (updatedCount + unchangedCount + newCount == 1)
+            {
+                //case of Currnet Single Defect
+                currStatus = ResultStates.SingleDefect;
+
+            }
+
+            else if (updatedCount + unchangedCount + newCount >= 2)
             {
                 //case of Multiple Current Defect
                 currStatus = ResultStates.MultipleDefect;
@@ -304,7 +307,7 @@ namespace baselining_tool
             rs.Add(prevStatus);
             rs.Add(currStatus);
 
-            return  rs;
+            return rs;
         }
 
     }

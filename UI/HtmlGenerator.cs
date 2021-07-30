@@ -121,18 +121,21 @@ namespace baselining_tool
                 ctr += 1;
             }
             html += "</table> </div> </body> </html>";
-            string filePath = AppDomain.CurrentDomain.BaseDirectory;
-            if (File.Exists(filePath + "resultHtml.html"))
+
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
+            Directory.CreateDirectory(path);
+
+            if (File.Exists(Path.Combine(path, "resultHtml.html")))
             {
-                File.Delete(filePath + "resultHtml.html");
-                BLogger.baselineLogger("Existing HTML result deleted");
+                File.Delete(Path.Combine(path, "resultHtml.html"));
+                BLogger.baselineLogger("Existing HTML result deleted\n");
             }
 
-            File.WriteAllText(filePath + "resultHtml.html", html);
+            File.WriteAllText(path + "resultHtml.html", html);
 
-            BLogger.baselineLogger("Html Result File Created");
+            BLogger.baselineLogger("Html Result File Created\n");
 
-
+            Console.WriteLine("resultHTML created in ApplicationData directory\n");
         }
 
         private static string bsStringify(BaselineState bState)

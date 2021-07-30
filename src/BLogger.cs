@@ -10,15 +10,17 @@ namespace baselining_tool
         public static void baselineLogger(string v)
         {
 
-            string filePath = AppDomain.CurrentDomain.BaseDirectory;
-            if (Program.LogStatus == 0 && File.Exists(filePath + "btlog.txt"))
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
+            Directory.CreateDirectory(path);
+
+            if (Program.LogStatus == 0 && File.Exists(Path.Combine(path, "btlog.txt")))
             {
-                File.Delete(filePath + "btlog.txt");
+                File.Delete(Path.Combine(path, "btlog.txt"));
                 Console.WriteLine("Exisiting log deleted");
             }
             StringBuilder sb = new StringBuilder();
             sb.Append(v);
-            File.AppendAllText(filePath + "btlog.txt", sb.ToString());
+            File.AppendAllText(path + "btlog.txt", sb.ToString());
             sb.Clear();
         }
     }

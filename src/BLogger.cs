@@ -20,7 +20,7 @@ namespace baselining_tool
             }
             StringBuilder sb = new StringBuilder();
             sb.Append(v);
-            File.AppendAllText(path + "btlog.txt", sb.ToString());
+            File.AppendAllText(path + "/btlog.txt", sb.ToString());
             sb.Clear();
         }
     }

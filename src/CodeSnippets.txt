@@ -1,18 +1,7 @@
-////////////
-
-updated c# format specifier
-
-private static int DummyCommand(DummyOptions options)
-{
-    Console.WriteLine($"{options.ParameterA} {options.ParameterB}");
-    Console.WriteLine("{0} {1}", options.ParameterA, options.ParameterB);       
-
-    return 0;
-}
-
 
 ////////////////
 
-
-//string sourcePath = @"C:\Users\t-atamene\source\repos\pub\play";
-            //string queryPath= @"C:\codeql-home\Windows-Driver-Developer-Supplemental-Tools\codeql\windows-drivers\suites\windows_driver_mustfix.qls";
+.\baselining-tool.exe baseline 
+-p "C:\Users\t-atamene\source\repos\pub\play" 
+-q "C:\codeql-home\Windows-Driver-Developer-Supplemental-Tools\codeql\windows-drivers\suites\windows_driver_mustfix.qls" 
+-f "single defect"

@@ -84,7 +84,7 @@ namespace baselining_tool
             foreach (DRRun run in mDict.Keys)
             {
                 //Adding row data for a Run
-                html += "<tr onclick=\"show_hide_row('hidden_row"+ctr+"');\">";
+                html += "<tr onclick=\"show_hide_row('hidden_row" + ctr + "');\">";
                 html += "<td style='border: 1px solid #ccc'>" + run.DriverInformation.Name + "</td>";
                 html += "<td style='border: Ï1px solid #ccc'>" + run.RuleInformation.Name + "</td>";
                 html += "<td style='border: Ï1px solid #ccc'>" + stringify(run.PreviousState) + "</td>";
@@ -93,7 +93,7 @@ namespace baselining_tool
 
                 //header info for a Result
 
-                html += "<tr id=\"hidden_row"+ctr+"\" class=\"hidden_row\"> " +
+                html += "<tr id=\"hidden_row" + ctr + "\" class=\"hidden_row\"> " +
                             " <td colspan=4> " +
                                 " <table border=1 id=\"table_detail\" align=left cellpadding=10>";
                 html += "<tr>";
@@ -131,7 +131,7 @@ namespace baselining_tool
                 BLogger.baselineLogger("Existing HTML result deleted\n");
             }
 
-            File.WriteAllText(path + "resultHtml.html", html);
+            File.WriteAllText(path + "/resultHtml.html", html);
 
             BLogger.baselineLogger("Html Result File Created\n");
 

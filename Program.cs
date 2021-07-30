@@ -13,7 +13,6 @@ namespace baselining_tool
     {
         private static int log_status;
         private static ResultStates rs;
-
         private static Dictionary<DRRun, List<ResultInfo>> mDict = new Dictionary<DRRun, List<ResultInfo>>();
 
         static int Main(string[] args)
@@ -30,23 +29,14 @@ namespace baselining_tool
         }
         private static int BaselineCommand(BaselineOptions options)
         {
-            string mFilePath = options.InputFile;
-            string qpath = options.QueryFile;
-            prepEnv(mFilePath, qpath);
-            //string ext = Path.GetExtension(mFilePath);
+            string sourcePath = options.InputFile;
+            string queryPath = options.QueryFile;
+            prepEnv(sourcePath, queryPath);
 
             BLogger.baselineLogger("Create a log file\n");
             //initialize some var
             log_status = 1;
             rs = ResultStates.Undetermined;
-
-            //if (ext != ".sarif")
-            //{
-            //    BLogger.baselineLogger("Expected a sarif file but got " + ext + "\n");
-            //    Console.WriteLine("Didn't get a expected file format\n");
-
-            //    Environment.Exit(1);
-            //}
 
             if (options.Filter != null)
             {
@@ -70,9 +60,14 @@ namespace baselining_tool
             SarifLog sarifLog;
             try
             {
-                sarifLog = SarifLog.Load(@"C:\Users\t-atamene\AppData\Roaming\WDSBaselining\baselining-files\tdbb.sarif");
+                string mpath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
+                string baseSubDirectory = Path.Combine(mpath, "baselining-files");
+                string locName = sourcePath.Split(Path.DirectorySeparatorChar)[sourcePath.Split(Path.DirectorySeparatorChar).Length - 1];
+                string fpath = lastBaselineFile(baseSubDirectory, locName);
+
+                sarifLog = SarifLog.Load(fpath);
                 Console.WriteLine("Input recieved. Checking format...\n");
-                BLogger.baselineLogger($"Input file {mFilePath} recieved\n");
+                BLogger.baselineLogger($"Input file {fpath} recieved\n");
 
                 bool validFormat = checkFormat(sarifLog);
                 if (validFormat == false)
@@ -87,15 +82,13 @@ namespace baselining_tool
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error occured while loading file " + mFilePath + "\n");
+                Console.WriteLine("Error occured while loading file \n");
                 Console.WriteLine(e.Message + "\n");
                 Environment.Exit(1);
             }
 
             return 0;
         }
-
-
 
         public static bool checkFormat(SarifLog sarifLog)
         {
@@ -124,14 +117,12 @@ namespace baselining_tool
             return bstate;
         }
 
-
         public static void analyseSarif(SarifLog sarifLog)
         {
             for (int i = 0; i < sarifLog.Runs.Count; i++)
             {
                 for (int j = 0; j < sarifLog.Runs[i].Results.Count; j++)
                 {
-
                     //initializations
 
                     ArtifactLocation artifactLocation = sarifLog.Runs[i].Results[j].Locations[0].PhysicalLocation.ArtifactLocation;
@@ -141,7 +132,6 @@ namespace baselining_tool
                     BaselineState bs = sarifLog.Runs[i].Results[j].BaselineState;
                     string dname = artifactLocation.Uri.ToString().Split('/')[0];
                     string rname = rId.Split('/')[rId.Split('/').Length - 1];
-
 
                     ResultInfo rInfo = new ResultInfo(
                         artifactLocation.Uri.ToString(),
@@ -182,8 +172,10 @@ namespace baselining_tool
 
         }
 
-        public static void prepEnv(string sp, string qp)
+        public static void prepEnv(string sourcePath, string queryPath)
         {
+            //initializing directories
+
             string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
             Directory.CreateDirectory(path);
             string baseSubDirectory = Path.Combine(path, "baselining-files");
@@ -193,17 +185,7 @@ namespace baselining_tool
             string databseSubDirectory = Path.Combine(path, "databases");
             Directory.CreateDirectory(databseSubDirectory);
 
-            //string fileName = Path.Combine(path, "btlog.txt");
-            //if (File.Exists(fileName))
-            //    File.Delete(fileName);
-            //StringBuilder sb = new StringBuilder();
-            //sb.Append("test 1 2 3\n");
-            //File.AppendAllText(fileName, sb.ToString());
-            //sb.Clear();
-            //sb.Append("test 4 5 6\n");
-            //File.AppendAllText(fileName, sb.ToString());
-            //sb.Clear();
-
+            //creating a process to handle command line executions
             Process p = new Process();
             p.StartInfo.FileName = "cmd.exe";
             p.StartInfo.CreateNoWindow = true;
@@ -212,32 +194,93 @@ namespace baselining_tool
             p.StartInfo.UseShellExecute = false;
             p.Start();
 
-            //string sourcePath = @"C:\Users\t-atamene\source\repos\pub\play";
-            //string queryPath = @"C:\codeql-home\Windows-Driver-Developer-Supplemental-Tools\codeql\windows-drivers\suites\windows_driver_mustfix.qls";
+            //name of driver or main source directory
+            string locName = sourcePath.Split(Path.DirectorySeparatorChar)[sourcePath.Split(Path.DirectorySeparatorChar).Length - 1];
 
-            string sourcePath =sp;
-            string queryPath = qp;
+            DirectoryInfo di = new DirectoryInfo(Path.Combine(databseSubDirectory, locName));
+            if (Directory.Exists(di.FullName))
+            {
+                Directory.Delete(di.FullName, true);
+            }
 
             p.StandardInput.WriteLine("codeql database create " +
             "-l=cpp " +
             "-s=" + sourcePath + " " +
             "-c " + sourcePath + "/build-dir.cmd " +
-            databseSubDirectory + @"/tdb");
-
+            databseSubDirectory + @"/" + locName + "");
 
             p.StandardInput.WriteLine("codeql database analyze " +
-                databseSubDirectory + "/tdb " +
+                Path.Combine(databseSubDirectory, locName) + " " +
                 "--format=sarifv2.1.0 " +
-                "--output=" + analysisSubDirectory + "/tdba.sarif " +
+                "--output=" + Path.Combine(analysisSubDirectory, lastNameFinder(analysisSubDirectory, locName, "analysis")) + " " +
                 queryPath);
-
-            p.StandardInput.WriteLine("sarif match-results-forward " + analysisSubDirectory + "/tdba.sarif " + "--previous " + analysisSubDirectory + "/tdba.sarif " +
-                "--output-file-path " + baseSubDirectory + "/tdbb.sarif");
 
             p.StandardInput.Flush();
             p.StandardInput.Close();
             p.WaitForExit();
             Console.WriteLine(p.StandardOutput.ReadToEnd());
+
+            //A separate process for comparing analysis files.
+            Process p1 = new Process();
+            p1.StartInfo.FileName = "cmd.exe";
+            p1.StartInfo.CreateNoWindow = true;
+            p1.StartInfo.RedirectStandardInput = true;
+            p1.StartInfo.RedirectStandardOutput = true;
+            p1.StartInfo.UseShellExecute = false;
+            p1.Start();
+
+            string[] lastTwo = lastTwoAnalysis(analysisSubDirectory, locName);
+
+            p1.StandardInput.WriteLine("sarif match-results-forward " + analysisSubDirectory + "/" + lastTwo[1] + " " + "--previous " + analysisSubDirectory + "/" + lastTwo[0] + " " +
+                "--output-file-path " + Path.Combine(baseSubDirectory, lastNameFinder(baseSubDirectory, locName, "baseline")));
+
+            p1.StandardInput.Flush();
+            p1.StandardInput.Close();
+            p1.WaitForExit();
+            Console.WriteLine(p1.StandardOutput.ReadToEnd());
+        }
+
+        private static string lastNameFinder(string directory, string locName, string id)
+        {
+            string matcher = "_analysis_";
+            if (id == "baseline")
+            {
+                matcher = "_baseline_";
+            }
+            string[] mMatches = Directory.GetFiles(directory, locName + matcher + "*");
+            if (mMatches.Length == 0)
+            {
+                return locName + matcher + 1 + ".sarif";
+            }
+            Array.Sort(mMatches);
+            string lastFilePath = mMatches[mMatches.Length - 1];
+            string fullname = lastFilePath.Split(Path.DirectorySeparatorChar)[lastFilePath.Split(Path.DirectorySeparatorChar).Length - 1];
+            int lastNum = int.Parse(fullname.Split('.')[0].Split('_')[2]);
+            string newName = locName + matcher + (lastNum + 1);
+            return newName + ".sarif";
+        }
+
+        private static string lastBaselineFile(string directory, string locName)
+        {
+            string[] mMatches = Directory.GetFiles(directory, locName + "_baseline_*");
+            Array.Sort(mMatches);
+            return mMatches[mMatches.Length - 1];
+        }
+
+        private static string[] lastTwoAnalysis(string directory, string locName)
+        {
+            string[] mMatches = Directory.GetFiles(directory, locName + "_analysis*");
+            Array.Sort(mMatches);
+            string lastFilePath = mMatches[mMatches.Length - 1];
+            string lastFileName = lastFilePath.Split(Path.DirectorySeparatorChar)[lastFilePath.Split(Path.DirectorySeparatorChar).Length - 1];
+
+            if (mMatches.Length == 1)
+            {
+                return new string[] { lastFileName, lastFileName };
+            }
+            string secondToLastFilePath = mMatches[mMatches.Length - 2];
+            string secondToLastFile = secondToLastFilePath.Split(Path.DirectorySeparatorChar)[secondToLastFilePath.Split(Path.DirectorySeparatorChar).Length - 1];
+            return new string[] { secondToLastFile, lastFileName };
         }
 
         public static Dictionary<DRRun, List<ResultInfo>> dictData()
@@ -292,8 +335,6 @@ namespace baselining_tool
 
         }
 
-
-
         private static DRRun CheckDict(Dictionary<DRRun, List<ResultInfo>> mDict, string dname, string rname)
         {
             DRRun rval = null;
@@ -307,7 +348,6 @@ namespace baselining_tool
             }
             return rval;
         }
-
 
         private static List<ResultStates> bundleStates(
             int newCount,
@@ -328,14 +368,12 @@ namespace baselining_tool
                 //case of Previous Rule Pass For a given driver
                 prevStatus = ResultStates.RulePasses;
 
-
             }
 
             else if (updatedCount + unchangedCount + absentCount == 1)
             {
                 //case of Previous Single Defect
                 prevStatus = ResultStates.SingleDefect;
-
 
             }
 

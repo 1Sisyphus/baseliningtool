@@ -31,7 +31,8 @@ namespace baselining_tool
         public ResultStates PreviousState
         {
             get => _prevState;
-            set{
+            set
+            {
                 _prevState = value;
             }
         }
@@ -39,7 +40,8 @@ namespace baselining_tool
         public ResultStates CurrentState
         {
             get => _currState;
-            set{
+            set
+            {
                 _currState = value;
             }
         }

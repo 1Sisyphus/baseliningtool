@@ -76,13 +76,17 @@ namespace baselining_tool
             html += "<tr>";
             html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Driver Name</th>";
             html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Rule Name</th>";
-            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Previous Baseline State</th>";
-            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Current Baseline State</th>";
+            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Previous Report</th>";
+            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Current Report</th>";
             html += "</tr>";
 
             int ctr = 0;
             foreach (DRRun run in mDict.Keys)
             {
+                if (run.CurrentState != Program.RS && Program.RS != ResultStates.Undetermined)
+                {
+                    continue;
+                }
                 //Adding row data for a Run
                 html += "<tr onclick=\"show_hide_row('hidden_row" + ctr + "');\">";
                 html += "<td style='border: 1px solid #ccc'>" + run.DriverInformation.Name + "</td>";

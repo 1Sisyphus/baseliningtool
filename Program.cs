@@ -27,16 +27,32 @@ namespace baselining_tool
         {
             get => log_status;
         }
+        public static ResultStates RS
+        {
+            get => rs;
+        }
         private static int BaselineCommand(BaselineOptions options)
         {
             string sourcePath = options.InputFile;
             string queryPath = options.QueryFile;
+
+            string ext = Path.GetExtension(queryPath);
+            if ((ext != ".ql") && (ext != ".qls"))
+            {
+                BLogger.baselineLogger("Query files should have .ql or .qls extension. A wrong file type passed.\n");
+                Console.WriteLine("Query should have type .ql or .qls");
+                Environment.Exit(1);
+                
+            }
+
             prepEnv(sourcePath, queryPath);
 
             BLogger.baselineLogger("Create a log file\n");
             //initialize some var
             log_status = 1;
             rs = ResultStates.Undetermined;
+
+            
 
             if (options.Filter != null)
             {
@@ -56,6 +72,8 @@ namespace baselining_tool
                         break;
                 }
             }
+
+            
 
             SarifLog sarifLog;
             try

@@ -10,14 +10,4 @@ namespace baselining_tool
     };
 
 
-    public enum FilterStates
-    {
-        New,
-        Absent,
-        Updated,
-        Unchanged,
-        All
-
-    }
-
 }

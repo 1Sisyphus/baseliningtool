@@ -9,5 +9,7 @@ Requirements before using the tool
 -	One should also install Sarif-sdk tool. Installing dotnet Core may be necessary.
 -	The path to MSBuild should also be added to PATH. 
 
+see installation instrctions in /Documentation for more info.
+
 Output of running baselining-tool.exe 
 -	the output of running the regression tool will be an html file in user’s ApplicationData directory. Ex, C:\Users\t-atamene\AppData\Roaming\WDSBaselining

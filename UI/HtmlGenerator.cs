@@ -74,7 +74,7 @@ namespace baselining_tool
             html += "<table border=1 id=\"table_detail\" align=left cellpadding=10>";
             //Adding HeaderRow.
             html += "<tr>";
-            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Driver Name</th>";
+            html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Source Path</th>";
             html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Rule Name</th>";
             html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Previous Report</th>";
             html += "<th style='background-color: #B8DBFD;border: 1px solid #ccc'>Current Report</th>";
@@ -91,7 +91,15 @@ namespace baselining_tool
                 html += "<tr onclick=\"show_hide_row('hidden_row" + ctr + "');\">";
                 html += "<td style='border: 1px solid #ccc'>" + run.DriverInformation.Name + "</td>";
                 html += "<td style='border: Ï1px solid #ccc'>" + run.RuleInformation.Name + "</td>";
-                html += "<td style='border: Ï1px solid #ccc'>" + stringify(run.PreviousState) + "</td>";
+                if (Program.Prev)
+                {
+                    html += "<td style='border: Ï1px solid #ccc'>" + stringify(run.PreviousState) + "</td>";
+                }
+                else
+                {
+                    html += "<td style='border: Ï1px solid #ccc'>" + " Not applicable " + "</td>";
+
+                }
                 html += "<td style='border: Ï1px solid #ccc'>" + stringify(run.CurrentState) + "</td>";
                 html += "</tr>";
 

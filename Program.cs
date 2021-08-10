@@ -14,13 +14,18 @@ namespace baselining_tool
         private static int log_status;
         private static ResultStates rs;
         private static Dictionary<DRRun, List<ResultInfo>> mDict = new Dictionary<DRRun, List<ResultInfo>>();
-
+        private static bool prevPresent = true;
         static int Main(string[] args)
         {
             return Parser.Default.ParseArguments<BaselineOptions>(args).
                 MapResult(
                 (BaselineOptions options) => BaselineCommand(options),
                 _ => 1);
+        }
+
+        public static bool Prev
+        {
+            get => prevPresent;
         }
 
         public static int LogStatus
@@ -42,7 +47,7 @@ namespace baselining_tool
                 BLogger.baselineLogger("Query files should have .ql or .qls extension. A wrong file type passed.\n");
                 Console.WriteLine("Query should have type .ql or .qls");
                 Environment.Exit(1);
-                
+
             }
 
             prepEnv(sourcePath, queryPath);
@@ -52,7 +57,7 @@ namespace baselining_tool
             log_status = 1;
             rs = ResultStates.Undetermined;
 
-            
+
 
             if (options.Filter != null)
             {
@@ -73,13 +78,13 @@ namespace baselining_tool
                 }
             }
 
-            
+
 
             SarifLog sarifLog;
             try
             {
                 string mpath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
-                string baseSubDirectory = Path.Combine(mpath, "baselining-files");
+                string baseSubDirectory = Path.Combine(mpath, "baselineStore");
                 string locName = sourcePath.Split(Path.DirectorySeparatorChar)[sourcePath.Split(Path.DirectorySeparatorChar).Length - 1];
                 string fpath = lastBaselineFile(baseSubDirectory, locName);
 
@@ -196,7 +201,7 @@ namespace baselining_tool
 
             string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
             Directory.CreateDirectory(path);
-            string baseSubDirectory = Path.Combine(path, "baselining-files");
+            string baseSubDirectory = Path.Combine(path, "baselineStore");
             Directory.CreateDirectory(baseSubDirectory);
             string analysisSubDirectory = Path.Combine(path, "analysis-files");
             Directory.CreateDirectory(analysisSubDirectory);
@@ -248,9 +253,18 @@ namespace baselining_tool
             p1.Start();
 
             string[] lastTwo = lastTwoAnalysis(analysisSubDirectory, locName);
+            string lastbaseline = lastNameFinder(baseSubDirectory, locName, "baseline");
 
             p1.StandardInput.WriteLine("sarif match-results-forward " + analysisSubDirectory + "/" + lastTwo[1] + " " + "--previous " + analysisSubDirectory + "/" + lastTwo[0] + " " +
-                "--output-file-path " + Path.Combine(baseSubDirectory, lastNameFinder(baseSubDirectory, locName, "baseline")));
+                "--output-file-path " + Path.Combine(baseSubDirectory, lastbaseline));
+
+            Console.WriteLine("setting up git");
+            p1.StandardInput.WriteLine("cd " + baseSubDirectory);
+            p1.StandardInput.WriteLine("git add *");
+            p1.StandardInput.WriteLine("git commit -m baseline_" + 
+                lastbaseline);
+            p1.StandardInput.WriteLine("git push origin main");
+            Console.WriteLine("pushed git");
 
             p1.StandardInput.Flush();
             p1.StandardInput.Close();
@@ -294,6 +308,7 @@ namespace baselining_tool
 
             if (mMatches.Length == 1)
             {
+                prevPresent = false;
                 return new string[] { lastFileName, lastFileName };
             }
             string secondToLastFilePath = mMatches[mMatches.Length - 2];

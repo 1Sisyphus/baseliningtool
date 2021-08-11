@@ -12,6 +12,9 @@ namespace baselining_tool
     public class Program
     {
         private static int log_status;
+        public static string LocName;
+        public static int type = 0;
+        public static string access = "";
         private static ResultStates rs;
         private static Dictionary<DRRun, List<ResultInfo>> mDict = new Dictionary<DRRun, List<ResultInfo>>();
         private static bool prevPresent = true;
@@ -23,7 +26,7 @@ namespace baselining_tool
                 (BaselineOptions options) => BaselineCommand(options),
                 _ => 1);
         }
-
+       
         public static bool Prev
         {
             get => prevPresent;
@@ -40,7 +43,9 @@ namespace baselining_tool
 
         private static int BaselineCommand(BaselineOptions options)
         {
+            type = 1;
             string fileprev = options.FilePrev;
+            access = fileprev;
             string filecurr = options.FileCurr;
 
             if (Path.GetExtension(fileprev) != ".sarif" || Path.GetExtension(filecurr) != ".sarif")
@@ -74,12 +79,12 @@ namespace baselining_tool
             p1.StandardInput.WriteLine("sarif match-results-forward " + filecurr + " " + "--previous " + fileprev + " " +
                 "--output-file-path " + Path.Combine(baseSubDirectory, newlastfile));
             p1.StandardInput.Flush();
-            Console.WriteLine("Setting up git...");
+            Console.WriteLine("Setting up verison control");
             p1.StandardInput.WriteLine("cd " + baseSubDirectory);
             p1.StandardInput.WriteLine("git add *");
             p1.StandardInput.WriteLine("git commit -m \" " + time + "\"");
             p1.StandardInput.WriteLine("git push origin main");
-            Console.WriteLine("Pushed to GitHub\n");
+            Console.WriteLine("Pushed to version control");
 
             p1.StandardInput.Flush();
             p1.StandardInput.Close();
@@ -123,6 +128,7 @@ namespace baselining_tool
 
         private static int CreateCommand(CreateOptions options)
         {
+
             string sourcePath = options.InputFile;
             string queryPath = options.QueryFile;
 
@@ -181,6 +187,7 @@ namespace baselining_tool
                 string mpath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
                 string baseSubDirectory = Path.Combine(mpath, "baselineStore");
                 string locName = lname;
+                LocName = locName;
                 string fpath = lastBaselineFile(baseSubDirectory, locName);
 
                 sarifLog = SarifLog.Load(fpath);
@@ -201,7 +208,7 @@ namespace baselining_tool
             catch (Exception e)
             {
                 Console.WriteLine("Error occured while loading file \n");
-                Console.WriteLine(e.Message + "\n");
+                Console.WriteLine(e.StackTrace + "\n");
                 Environment.Exit(1);
             }
         }
@@ -313,18 +320,18 @@ namespace baselining_tool
 
             //name of driver or main source directory
             string locName = sourcePath.Split(Path.DirectorySeparatorChar)[sourcePath.Split(Path.DirectorySeparatorChar).Length - 1];
+            LocName = locName;
+            //DirectoryInfo di = new DirectoryInfo(Path.Combine(databseSubDirectory, locName));
+            //if (Directory.Exists(di.FullName))
+            //{
+            //    Directory.Delete(di.FullName, true);
+            //}
+            //p.StandardInput.WriteLine("codeql database create " +
+            //"-l=cpp " +
+            //"-s=" + sourcePath + " " +
+            //"-c " + sourcePath + "/build-dir.cmd " +
+            //databseSubDirectory + @"/" + locName + "");
 
-            DirectoryInfo di = new DirectoryInfo(Path.Combine(databseSubDirectory, locName));
-            if (Directory.Exists(di.FullName))
-            {
-                Directory.Delete(di.FullName, true);
-            }
-
-            p.StandardInput.WriteLine("codeql database create " +
-            "-l=cpp " +
-            "-s=" + sourcePath + " " +
-            "-c " + sourcePath + "/build-dir.cmd " +
-            databseSubDirectory + @"/" + locName + "");
 
             p.StandardInput.WriteLine("codeql database analyze " +
                 Path.Combine(databseSubDirectory, locName) + " " +
@@ -352,13 +359,13 @@ namespace baselining_tool
             p1.StandardInput.WriteLine("sarif match-results-forward " + analysisSubDirectory + "/" + lastTwo[1] + " " + "--previous " + analysisSubDirectory + "/" + lastTwo[0] + " " +
                 "--output-file-path " + Path.Combine(baseSubDirectory, lastbaseline));
 
-            Console.WriteLine("setting up git");
+            Console.WriteLine("Setting up version control");
             p1.StandardInput.WriteLine("cd " + baseSubDirectory);
             p1.StandardInput.WriteLine("git add *");
             p1.StandardInput.WriteLine("git commit -m baseline_" +
                 lastbaseline);
             p1.StandardInput.WriteLine("git push origin main");
-            Console.WriteLine("pushed git");
+            Console.WriteLine("Pushed to version control");
 
             p1.StandardInput.Flush();
             p1.StandardInput.Close();
@@ -393,7 +400,7 @@ namespace baselining_tool
             return mMatches[mMatches.Length - 1];
         }
 
-        private static string[] lastTwoAnalysis(string directory, string locName)
+        public static string[] lastTwoAnalysis(string directory, string locName)
         {
             string[] mMatches = Directory.GetFiles(directory, locName + "_analysis*");
             Array.Sort(mMatches);

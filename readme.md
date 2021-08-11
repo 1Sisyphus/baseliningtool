@@ -1,15 +1,29 @@
-How to run the regression analysis tool:
-Baselinining-tool.exe baseline -p “path-to-source-file” -q “path-to-query” -f “filter-option”
--	Filter option can be “single defect”, “multiple defect”, and “rule passes”. Passing wrong type of argument will set the result type to default filter status, which is showing all result types. 
--	Query files should have file extension of .ql or .qls. If one wants to run multiple queries, they should update/create a .qls file.
--	The path to source file should have a build-dir.cmd build script. If one wants to only build certain drivers/sources, they they should copy the build-dir.cmd to the directory that those selected drivers exist.
+-----------------
+Ways to Run
 
-Requirements before using the tool
--	Users should download CodeQL CLI and add the codeql.exe file to user PATH in environment variables setting.
--	One should also install Sarif-sdk tool. Installing dotnet Core may be necessary.
--	The path to MSBuild should also be added to PATH. 
+1. 
+baselining-tool.exe createAndBaseline
+-p "" 
+-q "" 
+-f ""
 
-see installation instrctions in /Documentation for more info.
+2.
+baselining-tool.exe baseline
+--previous ""
+--current ""
+-f ""
 
-Output of running baselining-tool.exe 
--	the output of running the regression tool will be an html file in user’s ApplicationData directory. Ex, C:\Users\t-atamene\AppData\Roaming\WDSBaselining
+-------------------
+Example
+
+1. 
+baselining-tool.exe baseline 
+--previous "C:\Users\t-atamene\AppData\Roaming\WDSBaselining\analysis-files\file.sarif" 
+--current "C:\Users\t-atamene\AppData\Roaming\WDSBaselining\analysis-files\file.sarif"
+--f "multiple-defect"
+
+2. 
+baselining-tool.exe createAndBaseline 
+-p "C:\Users\t-atamene\source\repos\pub\Windows-driver-samples" 
+-q "C:\codeql-home\Windows-Driver-Developer-Supplemental-Tools\codeql\windows-drivers\suites\windows_driver_mustfix.qls" 
+-f "single defect"

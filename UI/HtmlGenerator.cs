@@ -90,8 +90,30 @@ namespace baselining_tool
                 //Adding row data for a Run
                 html += "<tr onclick=\"show_hide_row('hidden_row" + ctr + "');\">";
                 html += "<td style='border: 1px solid #ccc'>" + run.DriverInformation.Name + "</td>";
+
+                //
+                bool state = false;
+                SarifLog log = null;
+                if (Program.type == 0) { 
+                    string dir = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining"), "analysis-files");
+                    string[] lasttwo = Program.lastTwoAnalysis(dir, Program.LocName);
+                    log = SarifLog.Load(Path.Combine(dir, lasttwo[0]));
+                }
+                else
+                {
+                    log = SarifLog.Load(Program.access);
+                }
+
+                for (int i = 0; i < log.Runs[0].Results.Count; i++)
+                {
+                    state = state || (log.Runs[0].Results[i].RuleId == run.RuleInformation.Id);
+                }
+                //
+
                 html += "<td style='border: Ï1px solid #ccc'>" + run.RuleInformation.Name + "</td>";
-                if (Program.Prev)
+
+
+                if (Program.Prev && state)
                 {
                     html += "<td style='border: Ï1px solid #ccc'>" + stringify(run.PreviousState) + "</td>";
                 }

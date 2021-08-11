@@ -1,7 +1,23 @@
+-----------------
+Ways to Run
 
-////////////////
+1. 
+baselining-tool.exe createAndBaseline
+-p "" 
+-q "" 
+-f ""
 
-.\baselining-tool.exe baseline 
--p "C:\Users\t-atamene\source\repos\pub\play" 
--q "C:\codeql-home\Windows-Driver-Developer-Supplemental-Tools\codeql\windows-drivers\suites\windows_driver_mustfix.qls" 
--f "single defect"
+2.
+baselining-tool.exe baseline
+--prev ""
+--curr ""
+-f ""
+
+-------------------
+Example
+
+1. 
+baselining-tool.exe baseline --previous "C:\Users\t-atamene\AppData\Roaming\WDSBaselining\analysis-files\file.sarif" --current "C:\Users\t-atamene\AppData\Roaming\WDSBaselining\analysis-files\file.sarif"
+
+2. 
+baselining-tool.exe create-and-run -p "C:\Users\t-atamene\AppData\Roaming\WDSBaselining\databases\Windows-driver-samples" -q "C:\codeql-home\Windows-Driver-Developer-Supplemental-Tools\codeql\windows-drivers\suites\windows_driver_mustfix.qls" -f "single defect"

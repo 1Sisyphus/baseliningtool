@@ -17,8 +17,9 @@ namespace baselining_tool
         private static bool prevPresent = true;
         static int Main(string[] args)
         {
-            return Parser.Default.ParseArguments<BaselineOptions>(args).
+            return Parser.Default.ParseArguments<CreateOptions, BaselineOptions>(args).
                 MapResult(
+                (CreateOptions options) => CreateCommand(options),
                 (BaselineOptions options) => BaselineCommand(options),
                 _ => 1);
         }
@@ -36,7 +37,91 @@ namespace baselining_tool
         {
             get => rs;
         }
+
         private static int BaselineCommand(BaselineOptions options)
+        {
+            string fileprev = options.FilePrev;
+            string filecurr = options.FileCurr;
+
+            if (Path.GetExtension(fileprev) != ".sarif" || Path.GetExtension(filecurr) != ".sarif")
+            {
+                BLogger.baselineLogger("Analysis files should have a .sarif extension.\n");
+                Console.WriteLine("Wrong file kind passed\n");
+                Environment.Exit(1);
+            }
+
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
+            Directory.CreateDirectory(path);
+            string baseSubDirectory = Path.Combine(path, "baselineStore");
+            Directory.CreateDirectory(baseSubDirectory);
+
+
+            Process p1 = new Process();
+            p1.StartInfo.FileName = "cmd.exe";
+            p1.StartInfo.CreateNoWindow = true;
+            p1.StartInfo.RedirectStandardInput = true;
+            p1.StartInfo.RedirectStandardOutput = true;
+            p1.StartInfo.UseShellExecute = false;
+            p1.Start();
+
+
+            string time = DateTime.Now.ToString();
+            string fullname = fileprev.Split(Path.DirectorySeparatorChar)[fileprev.Split(Path.DirectorySeparatorChar).Length - 1];
+            string newlastfile = lastNameFinder(baseSubDirectory, fullname.Split('.')[0], "baseline");
+
+            Console.WriteLine(newlastfile);
+
+            p1.StandardInput.WriteLine("sarif match-results-forward " + filecurr + " " + "--previous " + fileprev + " " +
+                "--output-file-path " + Path.Combine(baseSubDirectory, newlastfile));
+            p1.StandardInput.Flush();
+            Console.WriteLine("Setting up git...");
+            p1.StandardInput.WriteLine("cd " + baseSubDirectory);
+            p1.StandardInput.WriteLine("git add *");
+            p1.StandardInput.WriteLine("git commit -m \" " + time + "\"");
+            p1.StandardInput.WriteLine("git push origin main");
+            Console.WriteLine("Pushed to GitHub\n");
+
+            p1.StandardInput.Flush();
+            p1.StandardInput.Close();
+            p1.WaitForExit();
+            Console.WriteLine(p1.StandardOutput.ReadToEnd());
+
+
+
+
+            BLogger.baselineLogger("Create a log file\n");
+            //initialize some var
+            log_status = 1;
+            rs = ResultStates.Undetermined;
+
+
+
+            if (options.Filter != null)
+            {
+                switch (options.Filter.ToString().ToLower())
+                {
+                    case "single defect":
+                        rs = ResultStates.SingleDefect;
+                        break;
+                    case "multiple defect":
+                        rs = ResultStates.MultipleDefect;
+                        break;
+                    case "rule passes":
+                        rs = ResultStates.RulePasses;
+                        break;
+                    default:
+                        Console.WriteLine("Filter is not chosen from 'single defect, multiple defect, rule passes.' Choosing the default option: All resutls \n");
+                        break;
+                }
+            }
+
+            baselineAndCreateCommonTask(fullname.Split('.')[0]);
+
+            return 0;
+
+        }
+
+        private static int CreateCommand(CreateOptions options)
         {
             string sourcePath = options.InputFile;
             string queryPath = options.QueryFile;
@@ -79,13 +164,23 @@ namespace baselining_tool
             }
 
 
+            baselineAndCreateCommonTask(sourcePath.Split(Path.DirectorySeparatorChar)[sourcePath.Split(Path.DirectorySeparatorChar).Length - 1]);
+
+
+            return 0;
+        }
+
+        private static void baselineAndCreateCommonTask(string lname)
+        {
+
+
 
             SarifLog sarifLog;
             try
             {
                 string mpath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
                 string baseSubDirectory = Path.Combine(mpath, "baselineStore");
-                string locName = sourcePath.Split(Path.DirectorySeparatorChar)[sourcePath.Split(Path.DirectorySeparatorChar).Length - 1];
+                string locName = lname;
                 string fpath = lastBaselineFile(baseSubDirectory, locName);
 
                 sarifLog = SarifLog.Load(fpath);
@@ -109,9 +204,8 @@ namespace baselining_tool
                 Console.WriteLine(e.Message + "\n");
                 Environment.Exit(1);
             }
-
-            return 0;
         }
+
 
         public static bool checkFormat(SarifLog sarifLog)
         {
@@ -261,7 +355,7 @@ namespace baselining_tool
             Console.WriteLine("setting up git");
             p1.StandardInput.WriteLine("cd " + baseSubDirectory);
             p1.StandardInput.WriteLine("git add *");
-            p1.StandardInput.WriteLine("git commit -m baseline_" + 
+            p1.StandardInput.WriteLine("git commit -m baseline_" +
                 lastbaseline);
             p1.StandardInput.WriteLine("git push origin main");
             Console.WriteLine("pushed git");

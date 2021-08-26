@@ -83,6 +83,7 @@ namespace baselining_tool
             int ctr = 0;
             foreach (DRRun run in mDict.Keys)
             {
+                //for filtering result types.
                 if (run.CurrentState != Program.RS && Program.RS != ResultStates.Undetermined)
                 {
                     continue;
@@ -94,7 +95,9 @@ namespace baselining_tool
                 //
                 bool state = false;
                 SarifLog log = null;
+                //type 0 is for createAndBaseline command while type 1 is for baseline(without creating database) command
                 if (Program.type == 0) { 
+                    //assumes analysis files will be in the Application Data directory.
                     string dir = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining"), "analysis-files");
                     string[] lasttwo = Program.lastTwoAnalysis(dir, Program.LocName);
                     log = SarifLog.Load(Path.Combine(dir, lasttwo[0]));

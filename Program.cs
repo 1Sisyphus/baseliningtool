@@ -55,6 +55,7 @@ namespace baselining_tool
                 Environment.Exit(1);
             }
 
+            //Creating a baseline result directory in the Application Data directory.
             string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WDSBaselining");
             Directory.CreateDirectory(path);
             string baseSubDirectory = Path.Combine(path, "baselineStore");
@@ -69,7 +70,7 @@ namespace baselining_tool
             p1.StartInfo.UseShellExecute = false;
             p1.Start();
 
-
+            //Getting the current time to use as a commit message when pushing the baselining result.
             string time = DateTime.Now.ToString();
             string fullname = fileprev.Split(Path.DirectorySeparatorChar)[fileprev.Split(Path.DirectorySeparatorChar).Length - 1];
             string newlastfile = lastNameFinder(baseSubDirectory, fullname.Split('.')[0], "baseline");
@@ -309,7 +310,7 @@ namespace baselining_tool
             string databseSubDirectory = Path.Combine(path, "databases");
             Directory.CreateDirectory(databseSubDirectory);
 
-            //creating a process to handle command line executions
+            //creating a process for command line executions
             Process p = new Process();
             p.StartInfo.FileName = "cmd.exe";
             p.StartInfo.CreateNoWindow = true;
@@ -321,16 +322,17 @@ namespace baselining_tool
             //name of driver or main source directory
             string locName = sourcePath.Split(Path.DirectorySeparatorChar)[sourcePath.Split(Path.DirectorySeparatorChar).Length - 1];
             LocName = locName;
-            //DirectoryInfo di = new DirectoryInfo(Path.Combine(databseSubDirectory, locName));
-            //if (Directory.Exists(di.FullName))
-            //{
-            //    Directory.Delete(di.FullName, true);
-            //}
-            //p.StandardInput.WriteLine("codeql database create " +
-            //"-l=cpp " +
-            //"-s=" + sourcePath + " " +
-            //"-c " + sourcePath + "/build-dir.cmd " +
-            //databseSubDirectory + @"/" + locName + "");
+            //if a database directory with the same name exists, delete it and create a new one.
+            DirectoryInfo di = new DirectoryInfo(Path.Combine(databseSubDirectory, locName));
+            if (Directory.Exists(di.FullName))
+            {
+                Directory.Delete(di.FullName, true);
+            }
+            p.StandardInput.WriteLine("codeql database create " +
+            "-l=cpp " +
+            "-s=" + sourcePath + " " +
+            "-c " + sourcePath + "/build-dir.cmd " +
+            databseSubDirectory + @"/" + locName + "");
 
 
             p.StandardInput.WriteLine("codeql database analyze " +
@@ -375,6 +377,7 @@ namespace baselining_tool
 
         private static string lastNameFinder(string directory, string locName, string id)
         {
+            //naming convention for analysis and baseline files. Ex. pci_analysis_1, or pci_baseline_1.
             string matcher = "_analysis_";
             if (id == "baseline")
             {
@@ -424,7 +427,6 @@ namespace baselining_tool
 
         private static void displayResult(Dictionary<DRRun, List<ResultInfo>> mDict)
         {
-            //do other stuff related to result output
             HtmlGenerator.generateHTML(mDict);
         }
 
